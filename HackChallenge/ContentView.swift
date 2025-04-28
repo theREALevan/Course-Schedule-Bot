@@ -222,3 +222,18 @@ struct ContentView: View {
         .accentColor(.blue)
     }
 }
+struct InputFormView_Previews: PreviewProvider {
+    static var previews: some View {
+        InputFormView()
+            .previewDevice("iPhone 16 Pro")
+            .previewDisplayName("Input Form")
+    }
+}
+
+struct ChatView_Previews: PreviewProvider {
+    static var previews: some View {
+        ChatView()
+            .previewDevice("iPhone 16 Pro")
+            .previewDisplayName("Chat")
+    }
+}
