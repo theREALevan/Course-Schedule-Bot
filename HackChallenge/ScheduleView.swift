@@ -69,7 +69,10 @@ struct ScheduleView: View {
                 // remove edgesIgnoringSafeArea so it stops above the bottom safe area
             }
         }
-        .navigationBarHidden(true)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackground(.white, for: .navigationBar)
+        .toolbarBackground(.visible,  for: .navigationBar)
+        .toolbarColorScheme(.light, for: .navigationBar)
     }
 }
 

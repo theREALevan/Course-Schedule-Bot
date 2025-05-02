@@ -119,9 +119,29 @@ struct ChatView: View {
 }
 
 struct ContentView: View {
-    var body: some View {
-        InputFormView().tabItem { Label("Input", systemImage: "pencil") }
+    @StateObject private var schedulerVM = SchedulerViewModel()
 
+    var body: some View {
+        NavigationStack {
+            InputFormView()
+                .environmentObject(schedulerVM)
+                .navigationTitle("Input")
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationDestination(
+                    isPresented: Binding(
+                        get: { schedulerVM.recommended != nil },
+                        set: { if !$0 { schedulerVM.recommended = nil } }
+                    )
+                ) {
+                    if let sched = schedulerVM.recommended {
+                        ScheduleView(schedule: sched)
+                    }
+                }
+        }
+        .toolbarBackground(.white, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .toolbarColorScheme(.light, for: .navigationBar)
+        .accentColor(.blue)
     }
 }
 
