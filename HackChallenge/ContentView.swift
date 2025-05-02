@@ -8,13 +8,15 @@ import SwiftUI
 
 struct Course: Identifiable {
     let id: String
-    let title: String
-    let description: String
+    let number: String
+    let name: String
+    let description: String?
 }
 
 struct Schedule: Identifiable {
     let id = UUID()
     let term: String
+    let rationale: String
     let courses: [Course]
 }
 
