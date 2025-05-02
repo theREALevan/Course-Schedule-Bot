@@ -43,24 +43,22 @@ public struct CoreCoursesResponse: Codable {
 
 // MARK: –– User DTOs
 
-/// POST /users/ request body
 public struct CreateUserRequest: Codable {
     public let netid: String
-    public let graduationYear: String    // now a String
+    public let graduationYear: String
     public let interests: String?
     public let availability: String
 }
 
-/// Response for POST /users/ and GET /users/{id}/
 public struct UserResponse: Codable {
     public let id: Int
     public let netid: String
-    public let graduationYear: String   // now a String
+    public let graduationYear: String
     public let interests: String?
     public let availability: String
 }
 
-public struct UsersListResponse: Codable {
+struct UsersListResponse: Codable {
     let users: [UserResponse]
 }
 
@@ -79,8 +77,8 @@ public struct AddCompletionResponse: Codable {
 
 public struct ScheduleResponse: Codable {
     public let id: Int
-    public let userId: Int
-    public let score: Double
+    public let userId: Int          // decodes "user_id" → userId
+    public let score: Double?
     public let rationale: String
     public let sections: [CourseSectionDTO]
 }
