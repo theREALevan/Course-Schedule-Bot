@@ -7,6 +7,12 @@ struct InputFormView: View {
     @StateObject private var vm = SchedulerViewModel()
     @State private var didInitialize = false
 
+    @State private var selectedYear: Int = Calendar.current.component(.year, from: Date())
+    private let yearRange: [Int] = {
+        let current = Calendar.current.component(.year, from: Date())
+        return Array(current...(current + 5))
+    }()
+
     var body: some View {
         NavigationView {
             Form {
@@ -20,11 +26,10 @@ struct InputFormView: View {
 
                 // Profile
                 Section(header: Text("Your Profile").font(.headline)) {
-                    DatePicker("Graduation Date",
-                               selection: $vm.graduationDate,
-                               displayedComponents: .date)
-                    Picker("Year", selection: $vm.yearSelection) {
-                        ForEach(vm.yearOptions, id: \.self) { Text($0) }
+                    Picker("Graduation Year", selection: $selectedYear) {
+                        ForEach(yearRange, id: \.self) { year in
+                            Text("\(year)").tag(year)
+                        }
                     }
                 }
 
@@ -44,59 +49,49 @@ struct InputFormView: View {
                     Button("Get Schedule") {
                         guard let user = session.user else { return }
 
-                        // Build updated profile
-                        let yearStr = String(
-                            Calendar.current.component(.year, from: vm.graduationDate)
-                        )
                         let availStr = vm.availability
                             .flatMap { $0 }
                             .map { $0 ? "1" : "0" }
                             .joined()
-
-                        // 1) Update user profile
+                        
                         APIService.shared.updateUser(
                             id: user.id,
-                            graduationYear: yearStr,
+                            graduationYear: String(selectedYear),
                             interests: vm.interest.isEmpty ? nil : vm.interest,
                             availability: availStr
                         ) { result in
                             switch result {
-                            case .success:
-                                // 2) Split out course numbers
-                                let courseNums = vm.previousCourses
-                                    .split(separator: ",")
-                                    .map { $0.trimmingCharacters(in: .whitespaces) }
-                                    .filter { !$0.isEmpty }
+                            case .success(let updatedUser):
+                                DispatchQueue.main.async {
+                                    session.user = updatedUser
 
-                                // 3) Add each new completion, waiting for all
-                                let group = DispatchGroup()
-                                courseNums.forEach { num in
-                                    group.enter()
-                                    APIService.shared.addCompletedCourse(
-                                        userId: user.id,
-                                        courseNumber: num
-                                    ) { _ in
-                                        group.leave()
+                                    let courseNums = vm.previousCourses
+                                        .split(separator: ",")
+                                        .map { $0.trimmingCharacters(in: .whitespaces) }
+                                        .filter { !$0.isEmpty }
+
+                                    let group = DispatchGroup()
+                                    for num in courseNums {
+                                        group.enter()
+                                        APIService.shared.addCompletedCourse(
+                                            userId: updatedUser.id,
+                                            courseNumber: num
+                                        ) { _ in group.leave() }
                                     }
-                                }
 
-                                // 4) When all additions complete, re‑fetch the full list
-                                group.notify(queue: .main) {
-                                    APIService.shared.fetchCompletedCourses(userId: user.id) { fetchResult in
-                                        if case .success(let comps) = fetchResult {
-                                            DispatchQueue.main.async {
-                                                // Update the text field so you see _all_ courses
-                                                vm.previousCourses = comps.joined(separator: ", ")
+                                    group.notify(queue: .main) {
+                                        APIService.shared.fetchCompletedCourses(userId: updatedUser.id) { fetchResult in
+                                            if case .success(let comps) = fetchResult {
+                                                DispatchQueue.main.async {
+                                                    vm.previousCourses = comps.joined(separator: ", ")
+                                                }
                                             }
+                                            vm.submit(userId: updatedUser.id)
                                         }
-                                        // 5) Finally generate the schedule
-                                        vm.submit(userId: user.id)
                                     }
                                 }
 
-                            case .failure(let error):
-                                print("Profile update failed:", error)
-                                // Even on failure, still attempt schedule generation
+                            case .failure:
                                 DispatchQueue.main.async {
                                     vm.submit(userId: user.id)
                                 }
@@ -110,7 +105,7 @@ struct InputFormView: View {
                     .cornerRadius(8)
                 }
 
-                // Show newly recommended schedule
+                // Recommended schedule link
                 if let schedule = vm.recommended {
                     Section {
                         NavigationLink("View Schedule",
@@ -123,12 +118,8 @@ struct InputFormView: View {
                 guard !didInitialize, let user = session.user else { return }
                 didInitialize = true
 
-                // Seed vm from session.user
-                if let yearInt = Int(user.graduationYear) {
-                    vm.graduationDate = Calendar.current.date(
-                        from: DateComponents(year: yearInt, month: 1, day: 1)
-                    ) ?? Date()
-                }
+                // Initialize selectedYear from user
+                selectedYear = Int(user.graduationYear) ?? Calendar.current.component(.year, from: Date())
 
                 vm.interest = user.interests ?? ""
 
@@ -138,7 +129,6 @@ struct InputFormView: View {
                         .map { i in chars[i..<i+12].map { $0 == "1" } }
                 }
 
-                // Load existing completed courses
                 APIService.shared.fetchCompletedCourses(userId: user.id) { result in
                     if case .success(let courses) = result {
                         DispatchQueue.main.async {
