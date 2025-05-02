@@ -70,33 +70,6 @@ struct AvailabilityPickerView: View {
 }
 
 // MARK: Views
-
-struct ScheduleView: View {
-    let schedule: Schedule
-
-    var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 16) {
-                Text(schedule.term).font(.title2).padding(.horizontal)
-                ForEach(schedule.courses) { c in
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(c.title).font(.headline)
-                        Text(c.description).font(.subheadline).foregroundColor(.secondary)
-                        Text(c.id).font(.caption).foregroundColor(.gray)
-                    }
-                    .padding()
-                    .background(RoundedRectangle(cornerRadius: 8)
-                                    .fill(Color(.systemBackground))
-                                    .shadow(radius: 2))
-                    .padding(.horizontal)
-                }
-            }
-            .padding(.top)
-        }
-        .navigationTitle("Schedule")
-    }
-}
-
 struct ChatView: View {
     @StateObject var vm = ChatViewModel()
 
@@ -147,11 +120,8 @@ struct ChatView: View {
 
 struct ContentView: View {
     var body: some View {
-        TabView {
-            InputFormView().tabItem { Label("Input", systemImage: "pencil") }
-            ChatView().tabItem { Label("Chat", systemImage: "bubble.left.and.bubble.right") }
-        }
-        .accentColor(.blue)
+        InputFormView().tabItem { Label("Input", systemImage: "pencil") }
+
     }
 }
 
