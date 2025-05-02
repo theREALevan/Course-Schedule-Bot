@@ -24,9 +24,7 @@ struct InputFormView: View {
                                selection: $vm.graduationDate,
                                displayedComponents: .date)
                     Picker("Year", selection: $vm.yearSelection) {
-                        ForEach(vm.yearOptions, id: \.self) {
-                            Text($0)
-                        }
+                        ForEach(vm.yearOptions, id: \.self) { Text($0) }
                     }
                 }
 
@@ -46,6 +44,7 @@ struct InputFormView: View {
                     Button("Get Schedule") {
                         guard let user = session.user else { return }
 
+                        // Build updated profile
                         let yearStr = String(
                             Calendar.current.component(.year, from: vm.graduationDate)
                         )
@@ -62,41 +61,42 @@ struct InputFormView: View {
                             availability: availStr
                         ) { result in
                             switch result {
-                            case .success(let updatedUser):
-                                DispatchQueue.main.async {
-                                    session.user = updatedUser
-                                    // 2) Sync previous courses
-                                    let courseNums = vm.previousCourses
-                                        .split(separator: ",")
-                                        .map { $0.trimmingCharacters(in: .whitespaces) }
-                                        .filter { !$0.isEmpty }
+                            case .success:
+                                // 2) Split out course numbers
+                                let courseNums = vm.previousCourses
+                                    .split(separator: ",")
+                                    .map { $0.trimmingCharacters(in: .whitespaces) }
+                                    .filter { !$0.isEmpty }
 
-                                    // First clear existing completions if needed, then add each:
-                                    APIService.shared.fetchCompletedCourses(userId: user.id) { existing in
-                                        if case .success(let already) = existing {
-                                            // Remove ones no longer listed
-                                            let toRemove = Set(already).subtracting(courseNums)
-                                            let toAdd = Set(courseNums).subtracting(already)
+                                // 3) Add each new completion, waiting for all
+                                let group = DispatchGroup()
+                                courseNums.forEach { num in
+                                    group.enter()
+                                    APIService.shared.addCompletedCourse(
+                                        userId: user.id,
+                                        courseNumber: num
+                                    ) { _ in
+                                        group.leave()
+                                    }
+                                }
 
-                                            // (Assuming you have an API to delete completions—
-                                            // otherwise you might skip removals.)
-                                            // For now just add any new ones:
-                                            toAdd.forEach { num in
-                                                APIService.shared.addCompletedCourse(
-                                                    userId: user.id,
-                                                    courseNumber: num
-                                                ) { _ in }
+                                // 4) When all additions complete, re‑fetch the full list
+                                group.notify(queue: .main) {
+                                    APIService.shared.fetchCompletedCourses(userId: user.id) { fetchResult in
+                                        if case .success(let comps) = fetchResult {
+                                            DispatchQueue.main.async {
+                                                // Update the text field so you see _all_ courses
+                                                vm.previousCourses = comps.joined(separator: ", ")
                                             }
                                         }
-                                        // 3) Generate schedule
-                                        DispatchQueue.main.async {
-                                            vm.submit(userId: user.id)
-                                        }
+                                        // 5) Finally generate the schedule
+                                        vm.submit(userId: user.id)
                                     }
                                 }
 
                             case .failure(let error):
-                                print("Update failed:", error)
+                                print("Profile update failed:", error)
+                                // Even on failure, still attempt schedule generation
                                 DispatchQueue.main.async {
                                     vm.submit(userId: user.id)
                                 }
@@ -123,7 +123,7 @@ struct InputFormView: View {
                 guard !didInitialize, let user = session.user else { return }
                 didInitialize = true
 
-                // seed vm from session.user
+                // Seed vm from session.user
                 if let yearInt = Int(user.graduationYear) {
                     vm.graduationDate = Calendar.current.date(
                         from: DateComponents(year: yearInt, month: 1, day: 1)
@@ -138,7 +138,7 @@ struct InputFormView: View {
                         .map { i in chars[i..<i+12].map { $0 == "1" } }
                 }
 
-                // load existing completed courses into previousCourses text
+                // Load existing completed courses
                 APIService.shared.fetchCompletedCourses(userId: user.id) { result in
                     if case .success(let courses) = result {
                         DispatchQueue.main.async {
