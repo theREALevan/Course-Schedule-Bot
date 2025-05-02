@@ -6,9 +6,18 @@ import SwiftUI
 
 @main
 struct HackChallengeApp: App {
+    @ObservedObject private var session = SessionStore.shared
+
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            Group {
+                if session.user == nil {
+                    LoginView()
+                } else {
+                    ContentView()
+                        .environmentObject(session)
+                }
+            }
         }
     }
 }

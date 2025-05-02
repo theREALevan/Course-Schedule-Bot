@@ -71,49 +71,6 @@ struct AvailabilityPickerView: View {
 
 // MARK: Views
 
-struct InputFormView: View {
-    @StateObject var vm = SchedulerViewModel()
-
-    var body: some View {
-        NavigationView {
-            Form {
-                Section(header: Text("Your Profile").font(.headline)) {
-                    TextField("NetID", text: $vm.netid)
-                    DatePicker("Graduation Date", selection: $vm.graduationDate, displayedComponents: .date)
-                    Picker("Year", selection: $vm.yearSelection) {
-                        ForEach(vm.yearOptions, id: \.self) { Text($0) }
-                    }
-                }
-
-                Section(header: Text("Availability").font(.headline)) {
-                    AvailabilityPickerView(availability: $vm.availability)
-                }
-
-                Section(header: Text("Preferences").font(.headline)) {
-                    TextField("Interest (e.g. ML, PL)", text: $vm.interest)
-                    TextField("Previous Courses", text: $vm.previousCourses)
-                }
-
-                Section {
-                    Button("Get Schedule") { vm.submit() }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                        .background(Color.blue)
-                        .foregroundColor(.white)
-                        .cornerRadius(8)
-                }
-
-                if let schedule = vm.recommended {
-                    Section {
-                        NavigationLink("View Schedule", destination: ScheduleView(schedule: schedule))
-                    }
-                }
-            }
-            .navigationTitle("Course Scheduler")
-        }
-    }
-}
-
 struct ScheduleView: View {
     let schedule: Schedule
 
