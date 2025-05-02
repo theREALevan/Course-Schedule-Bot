@@ -12,41 +12,39 @@ struct LoginView: View {
     @State private var isLoggingIn = false
     @ObservedObject private var session = SessionStore.shared
 
+    // MARK: –– Styling
+    private let backgroundGradient = LinearGradient(
+        gradient: Gradient(colors: [Color.blue.opacity(0.85), Color.purple.opacity(0.85)]),
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
     var body: some View {
         ZStack {
-            // 1. Full-screen gradient background
-            LinearGradient(
-                gradient: Gradient(colors: [Color.blue.opacity(0.8), Color.purple.opacity(0.8)]),
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
+            backgroundGradient
+                .ignoresSafeArea()
 
-            VStack(spacing: 32) {
-                // 2. App title & icon
-                VStack(spacing: 8) {
-                    Image(systemName: "book.circle.fill")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 72, height: 72)
-                        .foregroundStyle(.white, .blue)
-                    Text("Course Scheduler")
-                        .font(.system(size: 32, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                }
+            VStack {
+                Spacer()
 
-                // 3. Card-like login form
+                // Title directly above the login card
+                Text("📚 Schedulr")
+                    .font(.system(size: 36, weight: .black, design: .rounded))
+                    .foregroundColor(.white)
+
+                // Login card centered
                 VStack(spacing: 16) {
-                    // NetID field with custom style
-                    TextField("NetID", text: $netid)
+                    TextField("NetID (e.g. rm834)", text: $netid)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                         .padding()
+                        .frame(maxWidth: .infinity)
+                        .multilineTextAlignment(.center)
                         .background(Color(.systemBackground))
                         .cornerRadius(8)
-                        .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                        .shadow(color: Color.black.opacity(0.1),
+                                radius: 4, x: 0, y: 2)
 
-                    // Login button
                     Button(action: attemptLogin) {
                         HStack {
                             if isLoggingIn {
@@ -58,21 +56,47 @@ struct LoginView: View {
                         }
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(Color.blue)
-                        )
+                        .background(RoundedRectangle(cornerRadius: 8).fill(Color.blue))
                         .foregroundColor(.white)
                     }
                     .disabled(netid.trimmingCharacters(in: .whitespaces).isEmpty || isLoggingIn)
                 }
                 .padding(24)
-                .background(Color(.systemBackground).opacity(0.95))
+                .background(Color(.systemBackground).opacity(0.97))
                 .cornerRadius(16)
                 .shadow(color: Color.black.opacity(0.2), radius: 10, x: 0, y: 5)
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 32)
+
+                // Optional tagline below card
+                Text("Plan & rank your CS classes with AI‑powered schedules")
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.9))
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 16)
+                    .padding(.horizontal, 40)
 
                 Spacer()
+
+                // Footer Info
+                VStack(spacing: 8) {
+                    Text("🧠 About Schedulr")
+                        .font(.headline)
+                        .foregroundColor(.white)
+
+                    Text("Generates personalized CS course schedules based on your grad year, completed courses & interests. Core data powered by Cornell’s API; AI‑driven prioritization of untaken core and electives.")
+                        .font(.caption)
+                        .foregroundColor(.white.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 32)
+
+                    HStack(spacing: 16) {
+                        Link("Frontend Repo", destination: URL(string: "https://github.com/theREALevan/Course-Schedule-Bot")!)
+                        Link("API Spec", destination: URL(string: "https://github.com/Robylongo/CourseApp/blob/main/api_spec.md")!)
+                    }
+                    .font(.footnote)
+                    .foregroundColor(.white.opacity(0.9))
+                }
+                .padding(.bottom, 24)
             }
             .padding(.top, 60)
         }
@@ -81,7 +105,6 @@ struct LoginView: View {
     private func attemptLogin() {
         isLoggingIn = true
         session.login(netid: netid)
-        // In production, observe session.user instead of fixed delay
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
             isLoggingIn = false
         }
