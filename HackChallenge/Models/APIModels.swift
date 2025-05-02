@@ -50,6 +50,12 @@ public struct CreateUserRequest: Codable {
     public let availability: String
 }
 
+public struct UpdateUserRequest: Codable {
+    public let graduationYear: String
+    public let interests: String?
+    public let availability: String
+}
+
 public struct UserResponse: Codable {
     public let id: Int
     public let netid: String
