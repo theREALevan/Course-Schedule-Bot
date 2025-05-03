@@ -12,8 +12,15 @@
 
 ## 🖼️ Screenshots
 
-> Screenshots coming soon!
+### Homepage
+<p align="center">
+  <img src="images/homepage.png" alt="Homepage" width="300"/>
+</p>
 
+### Feature Highlights
+<p align="center">
+  <img src="images/features.png" alt="Features" width="500"/>
+</p>
 ---
 
 ## 🧠 About the App
